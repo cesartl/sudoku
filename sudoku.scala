@@ -1,3 +1,10 @@
+sealed trait Cell extends Product with Serializable
+
+case class Fixed(e:Int) extends Cell
+
+case class Undetermined(list:List[Int]) extends Cell
+
+
 val sudoku = """
     6 7 1
 68  7  9 
@@ -23,11 +30,6 @@ val s = sudoku
     ).toVector
 ).toVector
 
-sealed trait Cell extends Product with Serializable
-
-case class Fixed(e:Int) extends Cell
-
-case class Undetermined(list:List[Int]) extends Cell
 
 def myNeighbourRow(s: Vector[Vector[Cell]], p:(Int,Int), e:Int) = {
     (!s(p._1).contains(Fixed(e))) || uniques(s)(p._1)(p._2) == Fixed(e)
