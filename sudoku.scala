@@ -1,5 +1,5 @@
 val sudoku = """
-   26 7 1
+    6 7 1
 68  7  9 
 19   45  
 82 1   4 
@@ -10,64 +10,70 @@ val sudoku = """
 7 3 18   
 """
 
-var s = sudoku
+val s = sudoku
 .split("\n")
 .slice(1,10)
 .map(row=>row
     .split("")
     .slice(1,10)
     .map(cell=>cell match {
-        case " " => (1 to 9).toArray
-        case _ => Array(cell.toInt)
+        case " " => Undetermined((1 to 9).toList)
+        case _ => Fixed(cell.toInt)
     }
-    )
-)
+    ).toVector
+).toVector
 
-def uniques(s: Array[Array[Array[Int]]]): Array[Array[Int]] = {
-    s
-    .map{row=>row
-        .map{cell=>
-            if (cell.size != 1){ 0 }
-            else { cell(0) }
-        }
-    }
+sealed trait Cell extends Product with Serializable
+
+case class Fixed(e:Int) extends Cell
+
+case class Undetermined(list:List[Int]) extends Cell
+
+def myNeighbourRow(s: Vector[Vector[Cell]], p:(Int,Int), e:Int) = {
+    (!s(p._1).contains(Fixed(e))) || uniques(s)(p._1)(p._2) == Fixed(e)
 }
 
-def myNeighbourRow(s: Array[Array[Array[Int]]], p:(Int,Int), e:Int) = {
-    uniques(s)(p._1).count(_==e)<1 || uniques(s)(p._1)(p._2) == e
+def myNeighbourColumn(s: Vector[Vector[Cell]], p:(Int,Int), e:Int) = {
+    val t = s.transpose
+    (!t(p._2).contains(Fixed(e))) || uniques(s)(p._1)(p._2) == Fixed(e)
 }
 
-def myNeighbourColumn(s: Array[Array[Array[Int]]], p:(Int,Int), e:Int) = {
-    val t = uniques(s).transpose
-    t(p._2).count(_==e)<1 || uniques(s)(p._1)(p._2) == e
-}
-
-def myNeighbourCube(s: Array[Array[Array[Int]]], p:(Int,Int), e:Int) = {
+def myNeighbourCube(s: Vector[Vector[Cell]], p:(Int,Int), e:Int) = {
     var ci = p._1 / 3
     var cj = p._2 / 3
-    val t = uniques(s).grouped(3).toList(ci).map{x=>(x.grouped(3).toList)(cj)}.flatten
+    val t = s.grouped(3).toList(ci).map{x=>(x.grouped(3).toList)(cj)}.flatten
     //println(t.toList)
-    uniques(s)(p._1).count(_==e)<1 || uniques(s)(p._1)(p._2) == e
+    (!uniques(s)(p._1).contains(Fixed(e))) || uniques(s)(p._1)(p._2) == Fixed(e)
 }
 
-def filter(sn: Array[Array[Array[Int]]]):Array[Array[Array[Int]]] = {
-    var sn1 = sn
+def filter(sn: Vector[Vector[Cell]]):Vector[Vector[Cell]] = {
+    val sn1:Vector[Vector[Cell]] = sn
     .zipWithIndex
-    .map{row=>row._1
+    .map{row:(Vector[Cell],Int)=>row._1
         .zipWithIndex
-        .map{cell=>cell._1
-            .filter(myNeighbourRow(sn,(row._2,cell._2),_))
-            .filter(myNeighbourColumn(sn,(row._2,cell._2),_))
-            .filter(myNeighbourCube(sn,(row._2,cell._2),_))
+        .map{
+            case (Undetermined(values),index_x)=>{
+                Undetermined(values.filter(_!=1))
+                
+            }
+            //.filter(x=>myNeighbourRow(sn,(row._2,index_x),x))
+            //.filter(x=>myNeighbourColumn(sn,(row._2,index_x),x))
+            //.filter(x=>myNeighbourCube(sn,(row._2,index_x),x)))
+            case (x,_)=>x//_._1 // (Fixed(value),index_x)=>value//Vector(Fixed(value))
+        }
+        .map{
+            case Undetermined(values) if (values.size==1)=>Fixed(values(0))
+            case x => x
         }
     }
-    if(sn1.deep==sn.deep) sn
-    else filter(sn1)
-    //sn1
+    //if(sn1==sn) sn
+    //else filter(sn1)
+    sn1
     
 }
 
 var solved = filter(s)
+
 solved.map{row=>row
     .map{_(0)}
     .mkString("")
