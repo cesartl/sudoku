@@ -5,8 +5,9 @@ case class Fixed(e:Int) extends Cell
 case class Undetermined(list:List[Int]) extends Cell
 
 
+
 val sudoku = """
-    6 7 1
+   26 7 1
 68  7  9 
 19   45  
 82 1   4 
@@ -32,12 +33,12 @@ val s = sudoku
 
 
 def myNeighbourRow(s: Vector[Vector[Cell]], p:(Int,Int), e:Int) = {
-    (!s(p._1).contains(Fixed(e))) || uniques(s)(p._1)(p._2) == Fixed(e)
+    (!s(p._1).contains(Fixed(e))) || s(p._1)(p._2) == Fixed(e)
 }
 
 def myNeighbourColumn(s: Vector[Vector[Cell]], p:(Int,Int), e:Int) = {
     val t = s.transpose
-    (!t(p._2).contains(Fixed(e))) || uniques(s)(p._1)(p._2) == Fixed(e)
+    (!t(p._2).contains(Fixed(e))) || s(p._1)(p._2) == Fixed(e)
 }
 
 def myNeighbourCube(s: Vector[Vector[Cell]], p:(Int,Int), e:Int) = {
@@ -45,7 +46,7 @@ def myNeighbourCube(s: Vector[Vector[Cell]], p:(Int,Int), e:Int) = {
     var cj = p._2 / 3
     val t = s.grouped(3).toList(ci).map{x=>(x.grouped(3).toList)(cj)}.flatten
     //println(t.toList)
-    (!uniques(s)(p._1).contains(Fixed(e))) || uniques(s)(p._1)(p._2) == Fixed(e)
+    (!t.contains(Fixed(e))) || s(p._1)(p._2) == Fixed(e)
 }
 
 def filter(sn: Vector[Vector[Cell]]):Vector[Vector[Cell]] = {
@@ -54,13 +55,10 @@ def filter(sn: Vector[Vector[Cell]]):Vector[Vector[Cell]] = {
     .map{row:(Vector[Cell],Int)=>row._1
         .zipWithIndex
         .map{
-            case (Undetermined(values),index_x)=>{
-                Undetermined(values.filter(_!=1))
-                
-            }
-            //.filter(x=>myNeighbourRow(sn,(row._2,index_x),x))
-            //.filter(x=>myNeighbourColumn(sn,(row._2,index_x),x))
-            //.filter(x=>myNeighbourCube(sn,(row._2,index_x),x)))
+            case (Undetermined(values),index_x)=>Undetermined(values
+            .filter(x=>myNeighbourRow(sn,(row._2,index_x),x))
+            .filter(x=>myNeighbourColumn(sn,(row._2,index_x),x))
+            .filter(x=>myNeighbourCube(sn,(row._2,index_x),x)))
             case (x,_)=>x//_._1 // (Fixed(value),index_x)=>value//Vector(Fixed(value))
         }
         .map{
@@ -68,16 +66,14 @@ def filter(sn: Vector[Vector[Cell]]):Vector[Vector[Cell]] = {
             case x => x
         }
     }
-    //if(sn1==sn) sn
-    //else filter(sn1)
-    sn1
+    if(sn1==sn) sn
+    else filter(sn1)
+    //sn1
     
 }
 
 var solved = filter(s)
 
-solved.map{row=>row
-    .map{_(0)}
-    .mkString("")
-}
-.mkString("\n")
+var printable = solved.map{_.map(_.asInstanceOf[Fixed].e).mkString("")}.mkString("\n")
+
+println(printable)
