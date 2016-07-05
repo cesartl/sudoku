@@ -1,6 +1,7 @@
 package sudoku
 
 import scala.annotation.tailrec
+import scala.util.Try
 
 sealed trait Cell extends Product with Serializable {
   def printCell(): String = {
@@ -9,6 +10,14 @@ sealed trait Cell extends Product with Serializable {
       case Undetermined(values) => "0"
     }
   }
+
+  def isFixed: Boolean = fold(_ => true, _ => false)
+
+  def fold[A](f: Int => A, g: List[Int] => A): A = this match {
+    case Fixed(i) => f(i)
+    case Undetermined(is) => g(is)
+  }
+
 }
 
 case class Fixed(e: Int) extends Cell
@@ -70,18 +79,21 @@ case class Sudoku(grid: Vector[Vector[Cell]]) {
       isValueAllowedInColumn(position, value) &&
       isValueAllowedInSquare(position, value)
 
+
+  def isSolved: Boolean =
+    grid.flatten.forall(_.isFixed)
+
   @tailrec
-  final def filter(): Sudoku = {
-    println("filtering")
-    val sn1: Vector[Vector[Cell]] = grid
+  final def solve(): Option[Sudoku] = {
+    val filtered: Vector[Vector[Cell]] = grid
       .zipWithIndex
-      .map { row: (Vector[Cell], Int) =>
-        row._1
+      .map { case (row, rowIdx) =>
+        row
           .zipWithIndex
           .map {
             case (Undetermined(values), colIdx) =>
               Undetermined(values
-                .filter(x => isValueAllowed((row._2, colIdx), x))
+                .filter(x => isValueAllowed((rowIdx, colIdx), x))
               )
             case (x, _) => x
           }
@@ -90,45 +102,48 @@ case class Sudoku(grid: Vector[Vector[Cell]]) {
             case x => x
           }
       }
-    if (sn1 == grid) this
-    else Sudoku(sn1).filter()
+    if (filtered == grid) {
+      if (isSolved) Some(this) else None
+    }
+    else Sudoku(filtered).solve()
   }
 
   def serialise(): String =
-    grid.flatMap(row => row).map {
+    grid.flatten.map {
       case Fixed(e) => e.toString
       case Undetermined(values) => "."
-    }.mkString("")
+    }.mkString
 
   def printGrid(): String =
     grid.map(
-      _.map(c => c.printCell()).mkString("")
+      _.map(c => c.printCell()).mkString
     ).mkString("\n")
 }
 
 object Sudoku {
 
-  def parse(s: String): Vector[Vector[Cell]] = {
-    s
+  def parse(s: String): Option[Sudoku] = {
+    sequence(s
       .toVector
       .map {
-        case '.' => Undetermined((1 to 9).toList)
-        case w => Fixed(w.toString.toInt)
-      }
+        case '.' => Some(Undetermined((1 to 9).toList))
+        case w => Try(w.toString.toInt).toOption.map(Fixed)
+      }).map(grid => Sudoku(grid
       .grouped(9)
-      .toVector
+      .toVector))
   }
 
-
-  def isSolved(grid: Vector[Vector[Cell]]): Boolean = {
-    grid.flatten.forall(c => c.isInstanceOf[Fixed])
-  }
+  def sequence[A](list: Vector[Option[A]]): Option[Vector[A]] =
+    list.foldRight[Option[Vector[A]]](Some(Vector())) {
+      case (Some(a), Some(tail)) => Some(a +: tail)
+      case _ => None
+    }
 
   def main(args: Array[String]): Unit = {
     val gridString = ".4.87.1..1....3.59..8.9.47.25..19....37...91....58..34.26.3.5..49.7....2..5.41.9."
-    val grid = Sudoku(parse(gridString))
-    val solved = grid.filter()
-    println(solved.serialise())
-    println(solved.printGrid())
+    val grid = parse(gridString).getOrElse(sys.error("Could not parse"))
+    val solved = grid.solve()
+    println(solved.map(_.serialise()))
+    println(solved.map(_.printGrid()))
   }
 }
