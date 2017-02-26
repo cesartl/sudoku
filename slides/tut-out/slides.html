@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Functional Sudoku</title>
+    <meta charset="utf-8">
+    <style>
+        @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+        @import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+        @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+        body {
+            font-family: 'Droid Serif', 'Helvetica';
+        }
+
+        h1, h2, h3 {
+            font-family: 'Yanone Kaffeesatz', 'Gill Sans';
+            font-weight: normal;
+        }
+
+        .remark-code, .remark-inline-code {
+            font-family: 'Ubuntu Mono', 'Consolas', 'Courier New';
+        }
+
+        .grid-image > img {
+            width: 100%;
+
+        }
+
+        .twoPanels{
+            display: flex;
+        }
+
+        .panel50{
+            width: 50%
+        }
+
+        .panel25{
+          width: 25%;
+        }
+
+        .panel75{
+          width: 75%
+        }
+
+        .myList li{
+            margin-bottom: 15px;
+        }
+
+        .wrap .remark-code-line{
+          display: flex;
+          flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body>
+<textarea id="source">
+
+
+
+
+class: center, middle
+
+# Functional Sudoku
+Cesar Tron-Lozai • `@cesartl`
+
+???
+- notes here
+- see https://remarkjs.com/#1
+---
+# Table of content
+
+### 1. Introduction
+### 2. Sudoku?
+### 3. Brief introduction to Scala features
+### 4. Sudoku Solver
+---
+class: center, middle
+
+# 1 Introdution
+---
+## 1 - Introduction / What will we talk about?
+.myList[
+- How to solve Sudoku grids using Functional Idioms in Scala
+- Have fun and hopefully learn something]
+
+Disclaimers:
+.myList[
+- I’m no Scala experts => please be tolerant if the Scala code smells
+- Original idea from Anton Loss (@avloss) developed during a London Scala Users Group in London
+- It is not meant to be the fastest/best solution to solve a grid
+- It does not solve hard grids (where backtracking is required)]
+---
+class: center, middle
+
+# 2 Sudoku?
+---
+## 2 - Sudoku? / The rules
+
+.twoPanels[
+.panel50.myList[
+- 9x9 grid
+- Goal is to fill the whole grid
+- All rows must have 1-9 once
+- All columns must have 1-9 once
+- All squares must have 1-9 once]
+.grid-image.panel50[![
+grid image](SudokuGrid.png)]]
+---
+class: center, middle
+
+# 3 Brief introduction to Scala features
+---
+## 3 - Scala / Case classes
+
+```scala
+sealed trait Shape
+
+case class Circle(d: Double) extends Shape
+case class Rectangle(w: Double, h: Double) extends Shape
+
+def shapePrint(shape: Shape) : String = shape match{
+  case Circle(d) => s"Circle [d=$d]"
+  case Rectangle(w, h) => s"Rectangle [w= $w, h=$h]"
+}
+val circle = Circle(22)
+val rectangle = Rectangle(10, 20)
+```
+```scala
+scala> shapePrint(circle)
+res2: String = Circle [d=22.0]
+
+scala> shapePrint(rectangle)
+res3: String = Rectangle [w= 10.0, h=20.0]
+```
+
+- “regular classes which export their constructor parameters and which provide a recursive decomposition mechanism via pattern matching”
+- Immutable
+- Automatic constructors and getters
+---
+## 3 - Scala / Filter operator
+```scala
+def filter[A](as: Vector[A])(f: A => Boolean) : Vector[A]
+```
+```scala
+scala> val l1 = Vector(1, 2, 3)
+l1: scala.collection.immutable.Vector[Int] = Vector(1, 2, 3)
+
+scala> l1.filter(x => x % 2 == 0)
+res4: scala.collection.immutable.Vector[Int] = Vector(2)
+```
+---
+## 3 - Scala / Map operator
+```scala
+def map[A, B](as: Vector[A])(f: A = >B) : Vector[B]
+```
+```scala
+scala> val l1 = Vector(1, 2, 3)
+l1: scala.collection.immutable.Vector[Int] = Vector(1, 2, 3)
+
+scala> l1.map(x => 2 * x)
+res5: scala.collection.immutable.Vector[Int] = Vector(2, 4, 6)
+```
+---
+## 3 - Scala / Flat Map operator
+```scala
+def flatMap[A, B](as: Vector[A])(f: A => Vector[B]) : Vector[B]
+```
+```scala
+scala> val l1 = Vector(1, 2, 3)
+l1: scala.collection.immutable.Vector[Int] = Vector(1, 2, 3)
+
+scala> l1.flatMap(x => Vector(x, x))
+res6: scala.collection.immutable.Vector[Int] = Vector(1, 1, 2, 2, 3, 3)
+```
+---
+## 3 - Scala / Grouped operator
+.twoPanels[
+.grid-image.panel25[![
+grouped image](ScalaGrouped.png)]
+.panel75[
+```scala
+val row1 = Vector(1, 2, 3, 4): Vector[Int]
+val row2 = Vector(5, 6, 7, 8): Vector[Int]
+val row3 = Vector(9, 10, 11, 12): Vector[Int]
+val row4 = Vector(13, 14, 15, 16): Vector[Int]
+val matrix = Vector(row1, row2, row3, row4):
+Vector[Vector[Int]]
+```]]
+.wrap[
+```scala
+scala> val g = matrix.grouped(2).toList
+g: List[scala.collection.immutable.Vector[scala.collection.immutable.Vector[Int]]] = List(Vector(Vector(1, 2, 3, 4), Vector(5, 6, 7, 8)), Vector(Vector(9, 10, 11, 12), Vector(13, 14, 15, 16)))
+
+scala> var rowIndex = 1
+rowIndex: Int = 1
+
+scala> var colIndex = 0
+colIndex: Int = 0
+
+scala> val square = g(rowIndex).flatMap(row => row.grouped(2).toList(colIndex))
+square: scala.collection.immutable.Vector[Int] = Vector(9, 10, 13, 14)
+```]
+---
+## 3 - Scala / Tuples
+```scala
+scala> val tuple = (1, 2, 3)
+tuple: (Int, Int, Int) = (1,2,3)
+
+scala> val e1 = tuple._1
+e1: Int = 1
+
+scala> val e2 = tuple._2
+e2: Int = 2
+
+scala> val e3 = tuple._3
+e3: Int = 3
+```
+---
+## 3 - Scala / zipWithIndex operator
+.wrap[
+```scala
+scala> val list = Vector("a", "b", "c")
+list: scala.collection.immutable.Vector[String] = Vector(a, b, c)
+
+scala> val zipped = list.zipWithIndex
+zipped: scala.collection.immutable.Vector[(String, Int)] = Vector((a,0), (b,1), (c,2))
+```]
+---
+## 3 - Scala / transpose
+.twoPanels[
+.grid-image.panel25[![
+grouped image](transpose.png)]
+.panel75[
+```scala
+val row1 = Vector (1, 2) : Vector[Int]
+val row2 = Vector(3, 4) : Vector[Int]
+val row3 = Vector(5, 6) : Vector[Int]
+```]]
+.wrap[
+```scala
+scala> val matrix = Vector(row1, row2, row3) : Vector[Vector[Int]]
+matrix: scala.collection.immutable.Vector[scala.collection.immutable.Vector[Int]] = Vector(Vector(1, 2), Vector(3, 4), Vector(5, 6))
+
+scala> val t = matrix.transpose
+t: scala.collection.immutable.Vector[scala.collection.immutable.Vector[Int]] = Vector(Vector(1, 3, 5), Vector(2, 4, 6))
+```]
+---
+class: center, middle
+
+# 4 Sudoku Solver
+---
+## 4 - Solver / Cell class
+
+```scala
+sealed trait Cell
+
+case class Fixed(e: Int) extends Cell
+
+case class Undetermined(values: List[Int]) extends Cell
+```
+A Sudoku grid is modelled as:
+```scala
+Vector[Vector[Cell]]
+```
+---
+## 4 - Solver / Sudoku class
+```scala
+case class Sudoku(grid: Vector[Vector[Cell]]) {
+
+  def isValueAllowedInRow(position: (Int, Int), value: Int): Boolean = ???
+
+  def isValueAllowedInColumn(position: (Int, Int), value: Int): Boolean = ???
+
+  def isValueAllowedInSquare(position: (Int, Int), value: Int): Boolean = ???
+}
+```
+---
+## 4 - Solver / Row logic
+```scala
+/**
+  * Returns true if the given value, at the given position, is allowed within its
+  * row. Logically this is true if the row doesn't already contain a Fixed cell
+  * with the given value
+  *
+  * @param position The position of the cell being checked
+  * @param value    The value to test
+  * @return true if the value is allowed in that cell
+  */
+def isValueAllowedInRow(position: (Int, Int), value: Int): Boolean =
+  !grid(position._1).contains(Fixed(value))
+```
+---
+## 4 - Solver / Column logic
+```scala
+/**
+  * Returns true if the given value, at the given position, is allowed within its
+  * column. Logically this is true if the column doesn't already contain a Fixed
+  * cell with the given value
+  *
+  * @param position The position of the cell being checked
+  * @param value    The value to test
+  * @return true if the value is allowed in that cell
+  */
+def isValueAllowedInColumn(position: (Int, Int), value: Int): Boolean = {
+  val t = grid.transpose
+  !t(position._2).contains(Fixed(value))
+}
+```
+---
+## 4 - Solver / Square logic
+```scala
+/**
+  * Returns true if the given value, at the given position, is allowed within its
+  * square. Logically this is true if the square doesn't already contain a Fixed
+  * cell with the given value
+  *
+  * @param position The position of the cell being checked
+  * @param value    The value to test
+  * @return true if the value is allowed in that cell
+  */
+def isValueAllowedInSquare(position: (Int, Int), value: Int): Boolean = {
+  val ci = position._1 / 3
+  val cj = position._2 / 3
+  val squareCells = grid.grouped(3).toList(ci).flatMap {
+    row => row.grouped(3).toList(cj)
+	}
+  !squareCells.contains(Fixed(value))
+}
+```
+???
+- grid.grouped(3) = Vector(row1, row2, row3), Vector(row4, row5, row6) etc...
+---
+## 4 - Solver / Logic wrapper
+```scala
+/**
+  * Returns true of the given value, at the given position is allowed. This methods
+  * combines the row, column and square strategies
+  *
+  * @param position The position of the cell being checked
+  * @param value    The value to test
+  * @return true if the value is allowed in that cell
+  */
+def isValueAllowed(position: (Int, Int), value: Int): Boolean =
+    isValueAllowedInRow(position, value) &&
+    isValueAllowedInColumn(position, value) &&
+    isValueAllowedInSquare(position, value)
+```
+---
+## 4 - Solver / Finally
+```scala
+def filter(): Sudoku = {
+  val filtered: Vector[Vector[Cell]] = grid
+    .zipWithIndex
+    .map {case (row, rowIdx) =>
+      row
+        .zipWithIndex
+        .map {
+          case (Undetermined(values), colIdx) =>
+            Undetermined(values.filter(v => isValueAllowed((rowIdx, colIdx),v)))
+          case (x, _) => x
+        }
+        .map {
+          case Undetermined(values) if values.size == 1 => Fixed(values.head)
+          case x => x
+        }
+    }
+  if (filtered == grid) this
+  else Sudoku(filtered).filter()
+}
+```
+---
+class: center, middle
+
+# The end!
+Code and slides at `cesartl/sudoku` on GitHub
+
+It contains a bit more error handling
+
+Tested again 100 simple Sudokus (https://qqwing.com/instructions.html)
+
+
+##Thank you:
+Anton Loss (@avloss)
+
+Julien Truffaut (https://github.com/julien-truffaut)
+
+## Questions?
+???
+- run 100 grids in <1s 
+ </textarea>
+<script src="remark-latest.min.js">
+</script>
+<script>
+    var slideshow = remark.create();
+</script>
+</body>
+</html>

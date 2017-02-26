@@ -38,7 +38,17 @@ val row4 = Vector(13, 14, 15, 16): Vector[Int]
 val matrix = Vector(row1, row2, row3, row4) : Vector[Vector[Int]]
 
 val g = matrix.grouped(2).toList
-println(g(0))
+
+var colIndex = 0
+var rowIndex = 1
+
+g(rowIndex)(1).grouped(2).toList(0)
+
+
+matrix.grouped(2)
+
+
+//println(g(0))
 /*
   g = [
     [[1, 2, 3, 4],[5, 6, 7, 8]],
@@ -46,11 +56,12 @@ println(g(0))
   ]
 */
 
-var colIndex = 0
-var rowIndex = 1
+
 
 val square = g(rowIndex)
   .flatMap(row => row.grouped(2).toList(colIndex))
+
+
 
 /*
   square = [3, 4, 7, 8]
@@ -69,6 +80,7 @@ val e2 = tuple._2 //=2
 val e3 = tuple._3 //=3
 
 
+matrix.zipWithIndex
 
 
 
