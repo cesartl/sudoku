@@ -113,7 +113,7 @@ class: center, middle
 ## 3 - Scala / Case classes
 
 ```scala
-sealed trait Shape
+trait Shape
 
 case class Circle(d: Double) extends Shape
 case class Rectangle(w: Double, h: Double) extends Shape
@@ -136,6 +136,10 @@ res3: String = Rectangle [w= 10.0, h=20.0]
 - “regular classes which export their constructor parameters and which provide a recursive decomposition mechanism via pattern matching”
 - Immutable
 - Automatic constructors and getters
+---
+## 4 - Scala / Vector
+.grid-image[![
+Vector performance](VectorPerformance.png)]
 ---
 ## 3 - Scala / Filter operator
 ```scala
@@ -252,7 +256,7 @@ class: center, middle
 ## 4 - Solver / Cell class
 
 ```scala
-sealed trait Cell
+trait Cell
 
 case class Fixed(e: Int) extends Cell
 
@@ -386,7 +390,7 @@ Julien Truffaut (https://github.com/julien-truffaut)
 
 ## Questions?
 ???
-- run 100 grids in <1s 
+- run 100 grids in 1200s ~ 80grids/s
  </textarea>
 <script src="remark-latest.min.js">
 </script>

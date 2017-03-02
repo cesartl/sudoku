@@ -18,20 +18,20 @@ lazy val baseSettings: Seq[Setting[_]] = Seq(
   resolvers += Resolver.sonatypeRepo("releases")
 )
 
-lazy val presentation = project.in(file("."))
-  .settings(moduleName := "presentation")
+lazy val fpSudoku = project.in(file("."))
+  .settings(moduleName := "FPSudoku")
   .settings(baseSettings: _*)
   .aggregate(core, slides)
   .dependsOn(core, slides)
 
 lazy val core = project
-  .settings(moduleName := "presentation-core")
+  .settings(moduleName := "FPSudoku-core")
   .settings(baseSettings: _*)
   .settings(libraryDependencies ++=Seq("org.scalatest"   %% "scalatest"   % "3.0.1"  % "test"))
 
 
 lazy val slides = project
-  .settings(moduleName := "presentation-slides")
+  .settings(moduleName := "FPSudoku-slides")
   .settings(baseSettings: _*)
   .settings(tutSettings: _*)
   .settings(
