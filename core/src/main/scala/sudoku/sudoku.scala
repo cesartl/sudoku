@@ -1,5 +1,12 @@
 package sudoku
 
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.collection.NonEmpty
+import eu.timepit.refined.numeric.Interval
+
+import eu.timepit.refined.numeric._
+import shapeless.nat._
+
 import scala.annotation.tailrec
 import scala.util.Try
 
@@ -123,14 +130,11 @@ case class Sudoku(grid: Vector[Vector[Cell]]) {
 object Sudoku {
 
   def parse(s: String): Option[Sudoku] = {
-    sequence(s
-      .toVector
-      .map {
-        case '.' => Some(Undetermined((1 to 9).toList))
-        case w => Try(w.toString.toInt).toOption.map(Fixed)
-      }).map(grid => Sudoku(grid
-      .grouped(9)
-      .toVector))
+    traverse(s.toVector) {
+      case '.' => Some(Undetermined((1 to 9).toList))
+      case w => Try(w.toString.toInt).toOption.map(Fixed)
+    }
+      .map(grid => Sudoku(grid.grouped(9).toVector))
   }
 
   def sequence[A](list: Vector[Option[A]]): Option[Vector[A]] =
@@ -138,6 +142,12 @@ object Sudoku {
       case (Some(a), Some(tail)) => Some(a +: tail)
       case _ => None
     }
+
+  def traverse[A, B](xs: Vector[A])(f: A => Option[B]): Option[Vector[B]] =
+    xs.foldRight[Option[Vector[B]]](Some(Vector())) { (a, buff) =>
+      buff.flatMap(list => f(a).map(b => b +: list))
+    }
+
 
   def main(args: Array[String]): Unit = {
     val gridString = ".4.87.1..1....3.59..8.9.47.25..19....37...91....58..34.26.3.5..49.7....2..5.41.9."

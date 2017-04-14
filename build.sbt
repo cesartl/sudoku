@@ -1,7 +1,7 @@
 
 lazy val baseSettings: Seq[Setting[_]] = Seq(
-  scalaVersion       := "2.12.0",
-  scalacOptions     ++= Seq(
+  scalaVersion := "2.12.0",
+  scalacOptions ++= Seq(
     "-deprecation",
     "-encoding", "UTF-8",
     "-feature",
@@ -27,7 +27,10 @@ lazy val fpSudoku = project.in(file("."))
 lazy val core = project
   .settings(moduleName := "FPSudoku-core")
   .settings(baseSettings: _*)
-  .settings(libraryDependencies ++=Seq("org.scalatest"   %% "scalatest"   % "3.0.1"  % "test"))
+  .settings(libraryDependencies ++= Seq(
+    "org.scalatest" %% "scalatest" % "3.0.1" % "test",
+    "eu.timepit" %% "refined" % "0.8.0"
+  ))
 
 
 lazy val slides = project
@@ -39,7 +42,8 @@ lazy val slides = project
     tutTargetDirectory := baseDirectory.value / "tut-out"
   ).dependsOn(core)
 
-initialCommands in console := """// helper method to disable type printing
+initialCommands in console :=
+  """// helper method to disable type printing
 def shortresults[T](t: => T) = {
    val s = t.toString
    val name = s.takeWhile(_ != ':')
