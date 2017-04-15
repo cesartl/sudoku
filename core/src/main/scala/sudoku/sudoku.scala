@@ -1,12 +1,5 @@
 package sudoku
 
-import eu.timepit.refined.api.Refined
-import eu.timepit.refined.collection.NonEmpty
-import eu.timepit.refined.numeric.Interval
-
-import eu.timepit.refined.numeric._
-import shapeless.nat._
-
 import scala.annotation.tailrec
 import scala.util.Try
 
@@ -118,7 +111,7 @@ case class Sudoku(grid: Vector[Vector[Cell]]) {
   def serialise(): String =
     grid.flatten.map {
       case Fixed(e) => e.toString
-      case Undetermined(values) => "."
+      case Undetermined(_) => "."
     }.mkString
 
   def printGrid(): String =
@@ -130,10 +123,11 @@ case class Sudoku(grid: Vector[Vector[Cell]]) {
 object Sudoku {
 
   def parse(s: String): Option[Sudoku] = {
-    traverse(s.toVector) {
+    val sudokuString = if (s.length == 9 * 9) Some(s) else None
+    sudokuString.flatMap(x => traverse(x.toVector) {
       case '.' => Some(Undetermined((1 to 9).toList))
       case w => Try(w.toString.toInt).toOption.map(Fixed)
-    }
+    })
       .map(grid => Sudoku(grid.grouped(9).toVector))
   }
 

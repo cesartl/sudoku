@@ -28,8 +28,7 @@ lazy val core = project
   .settings(moduleName := "FPSudoku-core")
   .settings(baseSettings: _*)
   .settings(libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "3.0.1" % "test",
-    "eu.timepit" %% "refined" % "0.8.0"
+    "org.scalatest" %% "scalatest" % "3.0.1" % "test"
   ))
 
 

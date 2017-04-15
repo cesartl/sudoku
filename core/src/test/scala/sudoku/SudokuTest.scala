@@ -50,6 +50,8 @@ class SudokuTest extends FlatSpec with Matchers {
 
   "A sudoku" should "solve simple cases" in {
     val start = System.currentTimeMillis();
+    simpleExamples should not be empty
+    simpleExamples.length shouldBe 100
     simpleExamples.foreach { case SudokuExample(input, output) =>
       input.solve() shouldEqual Some(output)
     }
