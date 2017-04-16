@@ -39,7 +39,9 @@ class SudokuTest extends FlatSpec with Matchers {
           input <- Sudoku.parse(fst)
           output <- Sudoku.parse(snd)
         } yield SudokuExample(input, output)
-      }.collect { case Some(e) => e }
+      }.collect {
+      case Right(sudoku) => sudoku
+    }
   }
 
   /*

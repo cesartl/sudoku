@@ -122,22 +122,29 @@ case class Sudoku(grid: Vector[Vector[Cell]]) {
 
 object Sudoku {
 
-  def validateSize(s: String): Option[Unit] = if (s.length == 9 * 9) Some(()) else None
+  def validateSize(s: String): Either[Throwable, Unit] = if (s.length == 9 * 9) Right(()) else Left(new IllegalArgumentException("Grid string must be 81 characters long"))
 
-  def parseCell(s: Char): Option[Cell] = s match {
-    case '.' => Some(Undetermined((1 to 9).toList))
-    case w => Try(w.toString.toInt).toOption.map(Fixed)
+  def validateCell(c: Char): Either[Throwable, Int] = {
+    Try(c.toString.toInt).toEither.flatMap {
+      case i if i > 0 && i <= 9 => Right(i)
+      case _ => Left(new IllegalArgumentException("Illegal cell value, but be /\\.|[1-9]/"))
+    }
   }
 
-  def parse(s: String): Option[Sudoku] = {
+  def parseCell(s: Char): Either[Throwable, Cell] = s match {
+    case '.' => Right(Undetermined((1 to 9).toList))
+    case w => validateCell(w).map(Fixed)
+  }
+
+  def parse(s: String): Either[Throwable, Sudoku] = {
     for {
       _ <- validateSize(s)
       grid <- traverse(s.toVector)(parseCell)
     } yield Sudoku(grid.grouped(9).toVector)
   }
 
-  def traverse[A, B](xs: Vector[A])(f: A => Option[B]): Option[Vector[B]] =
-    xs.foldRight[Option[Vector[B]]](Some(Vector())) { (a, buff) =>
+  def traverse[A, L, R](xs: Vector[A])(f: A => Either[L, R]): Either[L, Vector[R]] =
+    xs.foldRight[Either[L, Vector[R]]](Right(Vector())) { (a, buff) =>
       buff.flatMap(list => f(a).map(b => b +: list))
     }
 
