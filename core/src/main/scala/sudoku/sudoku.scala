@@ -122,20 +122,19 @@ case class Sudoku(grid: Vector[Vector[Cell]]) {
 
 object Sudoku {
 
-  def parse(s: String): Option[Sudoku] = {
-    val sudokuString = if (s.length == 9 * 9) Some(s) else None
-    sudokuString.flatMap(x => traverse(x.toVector) {
-      case '.' => Some(Undetermined((1 to 9).toList))
-      case w => Try(w.toString.toInt).toOption.map(Fixed)
-    })
-      .map(grid => Sudoku(grid.grouped(9).toVector))
+  def validateSize(s: String): Option[Unit] = if (s.length == 9 * 9) Some(()) else None
+
+  def parseCell(s: Char): Option[Cell] = s match {
+    case '.' => Some(Undetermined((1 to 9).toList))
+    case w => Try(w.toString.toInt).toOption.map(Fixed)
   }
 
-  def sequence[A](list: Vector[Option[A]]): Option[Vector[A]] =
-    list.foldRight[Option[Vector[A]]](Some(Vector())) {
-      case (Some(a), Some(tail)) => Some(a +: tail)
-      case _ => None
-    }
+  def parse(s: String): Option[Sudoku] = {
+    for {
+      _ <- validateSize(s)
+      grid <- traverse(s.toVector)(parseCell)
+    } yield Sudoku(grid.grouped(9).toVector)
+  }
 
   def traverse[A, B](xs: Vector[A])(f: A => Option[B]): Option[Vector[B]] =
     xs.foldRight[Option[Vector[B]]](Some(Vector())) { (a, buff) =>
