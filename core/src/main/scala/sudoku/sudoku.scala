@@ -111,7 +111,7 @@ case class Sudoku(grid: Vector[Vector[Cell]]) {
   def serialise(): String =
     grid.flatten.map {
       case Fixed(e) => e.toString
-      case Undetermined(values) => "."
+      case Undetermined(_) => "."
     }.mkString
 
   def printGrid(): String =
@@ -120,24 +120,40 @@ case class Sudoku(grid: Vector[Vector[Cell]]) {
     ).mkString("\n")
 }
 
+sealed trait ParsingError
+
+case class InvalidGridSize(n: Int) extends ParsingError
+
+case class InvalidCell(c: Char) extends ParsingError
+
 object Sudoku {
 
-  def parse(s: String): Option[Sudoku] = {
-    sequence(s
-      .toVector
-      .map {
-        case '.' => Some(Undetermined((1 to 9).toList))
-        case w => Try(w.toString.toInt).toOption.map(Fixed)
-      }).map(grid => Sudoku(grid
-      .grouped(9)
-      .toVector))
+  def validateSize(s: String): Either[ParsingError, Unit] = if (s.length == 9 * 9) Right(()) else Left(InvalidGridSize(s.length))
+
+  def validateCell(c: Char): Either[ParsingError, Int] = {
+    Try(c.toString.toInt).toEither.left.map(_ => InvalidCell(c)).flatMap {
+      case i if i > 0 && i <= 9 => Right(i)
+      case _ => Left(InvalidCell(c))
+    }
   }
 
-  def sequence[A](list: Vector[Option[A]]): Option[Vector[A]] =
-    list.foldRight[Option[Vector[A]]](Some(Vector())) {
-      case (Some(a), Some(tail)) => Some(a +: tail)
-      case _ => None
+  def parseCell(s: Char): Either[ParsingError, Cell] = s match {
+    case '.' => Right(Undetermined((1 to 9).toList))
+    case w => validateCell(w).map(Fixed)
+  }
+
+  def parse(s: String): Either[ParsingError, Sudoku] = {
+    for {
+      _ <- validateSize(s)
+      grid <- traverse(s.toVector)(parseCell)
+    } yield Sudoku(grid.grouped(9).toVector)
+  }
+
+  def traverse[A, L, R](xs: Vector[A])(f: A => Either[L, R]): Either[L, Vector[R]] =
+    xs.foldRight[Either[L, Vector[R]]](Right(Vector())) { (a, buff) =>
+      buff.flatMap(list => f(a).map(b => b +: list))
     }
+
 
   def main(args: Array[String]): Unit = {
     val gridString = ".4.87.1..1....3.59..8.9.47.25..19....37...91....58..34.26.3.5..49.7....2..5.41.9."
