@@ -120,23 +120,29 @@ case class Sudoku(grid: Vector[Vector[Cell]]) {
     ).mkString("\n")
 }
 
+sealed trait ParsingError
+
+case class InvalidGridSize(n: Int) extends ParsingError
+
+case class InvalidCell(c: Char) extends ParsingError
+
 object Sudoku {
 
-  def validateSize(s: String): Either[Throwable, Unit] = if (s.length == 9 * 9) Right(()) else Left(new IllegalArgumentException("Grid string must be 81 characters long"))
+  def validateSize(s: String): Either[ParsingError, Unit] = if (s.length == 9 * 9) Right(()) else Left(InvalidGridSize(s.length))
 
-  def validateCell(c: Char): Either[Throwable, Int] = {
-    Try(c.toString.toInt).toEither.flatMap {
+  def validateCell(c: Char): Either[ParsingError, Int] = {
+    Try(c.toString.toInt).toEither.left.map(_ => InvalidCell(c)).flatMap {
       case i if i > 0 && i <= 9 => Right(i)
-      case _ => Left(new IllegalArgumentException("Illegal cell value, but be /\\.|[1-9]/"))
+      case _ => Left(InvalidCell(c))
     }
   }
 
-  def parseCell(s: Char): Either[Throwable, Cell] = s match {
+  def parseCell(s: Char): Either[ParsingError, Cell] = s match {
     case '.' => Right(Undetermined((1 to 9).toList))
     case w => validateCell(w).map(Fixed)
   }
 
-  def parse(s: String): Either[Throwable, Sudoku] = {
+  def parse(s: String): Either[ParsingError, Sudoku] = {
     for {
       _ <- validateSize(s)
       grid <- traverse(s.toVector)(parseCell)

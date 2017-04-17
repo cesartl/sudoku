@@ -26,32 +26,38 @@ class SudokuTest extends FlatSpec with Matchers {
 
   case class Wrong(sudoku: Sudoku) extends Result
 
-  def readExample(fileName: String): List[SudokuExample] = {
+  def readExample(fileName: String): Vector[SudokuExample] = {
     val in = getClass.getResourceAsStream(fileName)
-    Source
-      .fromInputStream(in).
-      getLines()
-      .toList
-      .drop(1)
-      .map { line =>
-        val List(fst, snd) = line.split(",").toList
-        for {
-          input <- Sudoku.parse(fst)
-          output <- Sudoku.parse(snd)
-        } yield SudokuExample(input, output)
-      }.collect {
-      case Right(sudoku) => sudoku
-    }
+
+    val entries =
+      Source
+        .fromInputStream(in).
+        getLines()
+        .toVector
+        .drop(1)
+
+    Sudoku.traverse(entries) { line =>
+      val List(fst, snd) = line.split(",").toList
+      for {
+        input <- Sudoku.parse(fst)
+        output <- Sudoku.parse(snd)
+      } yield SudokuExample(input, output)
+    }.fold(
+      error => {
+        sys.error("Could not read example: " + error)
+      },
+      identity
+    )
   }
 
   /*
     Test cases generated using https://qqwing.com/instructions.html
    */
-  val simpleExamples: List[SudokuExample] = readExample("/sudoku-simple.csv")
-  val easyExamples: List[SudokuExample] = readExample("/sudoku-easy.csv")
+  val simpleExamples: Vector[SudokuExample] = readExample("/sudoku-simple.csv")
+  val easyExamples: Vector[SudokuExample] = readExample("/sudoku-easy.csv")
 
   "A sudoku" should "solve simple cases" in {
-    val start = System.currentTimeMillis();
+    val start = System.currentTimeMillis()
     simpleExamples should not be empty
     simpleExamples.length shouldBe 100
     simpleExamples.foreach { case SudokuExample(input, output) =>
@@ -61,4 +67,11 @@ class SudokuTest extends FlatSpec with Matchers {
     println(stop - start)
   }
 
+  "A sudoku input" should "be exactly 81 characters long" in {
+    Sudoku.parse("abc") shouldBe Left(InvalidGridSize(3))
+  }
+
+  "A sudoku input" should "only should have characters matching /\\.|[1-9]/" in {
+    Sudoku.parse(".93.2..6.4.21...h..1...8......4...2....76.14......2..9..6...7.3..9.87..2.......9.") shouldBe Left(InvalidCell('h'))
+  }
 }
