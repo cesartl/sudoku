@@ -18,3 +18,4 @@ project/project/
 benchData/
 _site/
 slides/tut-out/
+.DS_Store
