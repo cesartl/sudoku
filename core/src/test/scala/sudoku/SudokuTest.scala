@@ -67,6 +67,18 @@ class SudokuTest extends FlatSpec with Matchers {
     println(stop - start)
   }
 
+  "A sudoku" should "be fast" in {
+    val start = System.currentTimeMillis()
+    simpleExamples should not be empty
+    simpleExamples.length shouldBe 100
+    simpleExamples.foreach { case SudokuExample(input, output) =>
+      input.solve()
+    }
+    val stop = System.currentTimeMillis();
+    println("total time")
+    println(stop - start)
+  }
+
   "A sudoku input" should "be exactly 81 characters long" in {
     Sudoku.parse("abc") shouldBe Left(InvalidGridSize(3))
   }
